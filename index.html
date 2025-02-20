@@ -100,7 +100,7 @@ function updateCryptoInfo(crypto) {
   currentCrypto = crypto;
   cryptoName.textContent = crypto.toUpperCase();
 
-  fetch(`https://api.coingecko.com/api/v3/simple/price/${crypto}?vs_currency=usd`)
+  fetch(`https://api.coingecko.com/api/v3/simple/price/${bitcoin, ethereum, solana}?vs_currency=usd`)
     .then(response => response.json())
     .then(data => {
       price.textContent = `$${data[crypto].usd.toLocaleString()}`;
@@ -110,7 +110,7 @@ function updateCryptoInfo(crypto) {
       console.error("Erro na API CoinGecko:", error);
     });
 
-  fetch(`https://api.coingecko.com/api/v3/coins/${crypto}/market_chart?vs_currency=usd&days=30`)
+  fetch(`https://api.coingecko.com/api/v3/coins/${bitcoin, ethereum, solana}/market_chart?vs_currency=usd&days=30`)
     .then(response => response.json())
     .then(data => {
       const prices = data.prices.map(price => ({
