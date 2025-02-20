@@ -7,7 +7,6 @@ body {
   font-family: sans-serif;
   margin: 0;
   padding: 0;
-  background-color: #f0f0f0;
 }
 
 #container {
@@ -15,6 +14,7 @@ body {
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
+  background-color: #f0f0f0;
 }
 
 #crypto-selector {
@@ -26,45 +26,49 @@ body {
   padding: 10px 20px;
   border: none;
   cursor: pointer;
-  font-weight: bold;
 }
 
 #bitcoin-button {
   background-color: gold;
-  color: #fff;
 }
 
 #ethereum-button {
-  background-color: silver;
-  color: #fff;
+  background-color: #8a8a8a; /* Melhor contraste para Ethereum */
 }
 
 #solana-button {
   background-color: purple;
-  color: #fff;
 }
 
 #crypto-info {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 20px;
-}
-
-#crypto-name {
-  font-size: 2em;
-  margin-bottom: 10px;
-  text-transform: uppercase;
 }
 
 #price {
-  font-size: 1.5em;
+  font-size: 2em;
   margin-bottom: 10px;
 }
 
 #chart {
-  width: 800px;
-  height: 400px;
+  width: 100%;
+  max-width: 800px; /* Responsividade */
+  height: auto; /* Ajusta a altura automaticamente */
+}
+
+#books {
+  margin-top: 20px;
+}
+
+.book {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.book img {
+  width: auto; /* Mantém proporção */
+  height: auto; /* Mantém proporção */
 }
 </style>
 </head>
@@ -81,91 +85,116 @@ body {
   <div id="crypto-info">
     <h2 id="crypto-name">Bitcoin</h2>
     <p id="price">Carregando...</p>
-    <div id="chart"></div>
+    <canvas id="chart"></canvas> <!-- Alterado para canvas -->
+  </div>
+
+  <div id="books">
+    <h2>Livros sobre Criptomoedas</h2>
+    <div class="book">
+      <img src="https://m.media-amazon.com/images/I/515z7+uX5CL._SY346_.jpg" alt="Bitcoin Book">
+      <div>
+        <h3>Bitcoin: A Peer-to-Peer Electronic Cash System</h3>
+        <a href="#">Comprar</a>
+      </div>
+    </div>
+    <div class="book">
+      <img src="https://m.media-amazon.com/images/I/419qF566+PL._SY346_.jpg" alt="Ethereum Book">
+      <div>
+        <h3>The Infinite Machine</h3>
+        <a href="#">Comprar</a>
+      </div>
+    </div>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+// Seletores
 const bitcoinButton = document.getElementById('bitcoin-button');
 const ethereumButton = document.getElementById('ethereum-button');
 const solanaButton = document.getElementById('solana-button');
 const cryptoName = document.getElementById('crypto-name');
 const price = document.getElementById('price');
-const chart = document.getElementById('chart');
+const chartCanvas = document.getElementById('chart');
 
 let currentCrypto = 'bitcoin';
+let chartInstance = null;
 
+// Atualiza informações da criptomoeda
 function updateCryptoInfo(crypto) {
   currentCrypto = crypto;
-  cryptoName.textContent = crypto.toUpperCase();
+  
+  // Atualiza o nome da criptomoeda
+  cryptoName.textContent = crypto.charAt(0).toUpperCase() + crypto.slice(1);
 
-  fetch(`https://api.coingecko.com/api/v3/simple/price/${bitcoin, ethereum, solana}?vs_currency=usd`)
+  // Fetch do preço
+  fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${crypto}&vs_currencies=usd`)
     .then(response => response.json())
     .then(data => {
-      price.textContent = `$${data[crypto].usd.toLocaleString()}`;
+      price.textContent = `$${data[crypto].usd}`;
     })
-    .catch(error => {
-      price.textContent = "Erro ao carregar o preço.";
-      console.error("Erro na API CoinGecko:", error);
+    .catch(() => {
+      price.textContent = 'Erro ao carregar preço';
     });
 
-  fetch(`https://api.coingecko.com/api/v3/coins/${bitcoin, ethereum, solana}/market_chart?vs_currency=usd&days=30`)
-    .then(response => response.json())
-    .then(data => {
-      const prices = data.prices.map(price => ({
-        x: new Date(price[0]),
-        y: price[1]
-      }));
+   // Fetch do gráfico
+   fetch(`https://api.coingecko.com/api/v3/coins/${crypto}/market_chart?vs_currency=usd&days=30`)
+     .then(response => response.json())
+     .then(data => {
+       const prices = data.prices.map(price => ({
+         x: new Date(price[0]),
+         y: price[1]
+       }));
 
-      new Chart(chart, {
-        type: 'line',
-        data: {
-          datasets: [{
-            data: prices,
-            borderColor: getCryptoColor(crypto),
-            borderWidth: 2,
-            tension: 0.4,
-            fill: false
-          }]
-        },
-        options: {
-          scales: {
-            x: {
-              type: 'time'
-            },
-            y: {
-              beginAtZero: false
-            }
-          },
-          plugins: {
-            legend: {
-              display: false
-            }
-          }
-        }
-      });
-    })
-    .catch(error => {
-      console.error("Erro na API CoinGecko:", error);
-    });
+       renderChart(prices, getCryptoColor(crypto));
+     })
+     .catch(() => {
+       console.error('Erro ao carregar dados do gráfico.');
+     });
 }
 
+// Renderiza o gráfico
+function renderChart(data, color) {
+   if (chartInstance) {
+     chartInstance.destroy(); // Destroi o gráfico anterior
+   }
+
+   chartInstance = new Chart(chartCanvas, {
+     type: 'line',
+     data: {
+       datasets: [{
+         data,
+         borderColor: color,
+         borderWidth: 2,
+         tension: 0.4,
+         fill: false
+       }]
+     },
+     options: {
+       scales: {
+         x: { type: 'time', time: { unit: 'day' } },
+         y: { beginAtZero: false }
+       },
+       plugins: { legend: { display: false } }
+     }
+   });
+}
+
+// Retorna a cor da criptomoeda
 function getCryptoColor(crypto) {
-  switch (crypto) {
-    case 'bitcoin':
-      return 'gold';
-    case 'ethereum':
-      return 'silver';
-    case 'solana':
-      return 'purple';
-  }
+   switch (crypto) {
+     case 'bitcoin': return 'gold';
+     case 'ethereum': return '#8a8a8a';
+     case 'solana': return 'purple';
+   }
 }
 
+// Eventos dos botões
 bitcoinButton.addEventListener('click', () => updateCryptoInfo('bitcoin'));
 ethereumButton.addEventListener('click', () => updateCryptoInfo('ethereum'));
 solanaButton.addEventListener('click', () => updateCryptoInfo('solana'));
 
+// Inicializa com Bitcoin
 updateCryptoInfo(currentCrypto);
 </script>
 </body>
