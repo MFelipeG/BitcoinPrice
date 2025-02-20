@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Criptomoedas</title>
+<title>Criptomoedas em Tempo Real</title>
 <style>
 body {
   font-family: sans-serif;
   margin: 0;
   padding: 0;
+  background-color: #f0f0f0;
 }
 
 #container {
@@ -14,7 +15,6 @@ body {
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
-  background-color: #f0f0f0;
 }
 
 #crypto-selector {
@@ -33,7 +33,7 @@ body {
 }
 
 #ethereum-button {
-  background-color: #8a8a8a; /* Melhor contraste para Ethereum */
+  background-color: #8a8a8a; /* Melhor contraste */
 }
 
 #solana-button {
@@ -54,27 +54,12 @@ body {
 #chart {
   width: 100%;
   max-width: 800px; /* Responsividade */
-  height: auto; /* Ajusta a altura automaticamente */
-}
-
-#books {
-  margin-top: 20px;
-}
-
-.book {
-  display: flex;
-  margin-bottom: 10px;
-}
-
-.book img {
-  width: auto; /* Mantém proporção */
-  height: auto; /* Mantém proporção */
 }
 </style>
 </head>
 <body>
 <div id="container">
-  <h1>Criptomoedas</h1>
+  <h1>Criptomoedas em Tempo Real</h1>
 
   <div id="crypto-selector">
     <button class="crypto-button" id="bitcoin-button">Bitcoin</button>
@@ -85,25 +70,7 @@ body {
   <div id="crypto-info">
     <h2 id="crypto-name">Bitcoin</h2>
     <p id="price">Carregando...</p>
-    <canvas id="chart"></canvas> <!-- Alterado para canvas -->
-  </div>
-
-  <div id="books">
-    <h2>Livros sobre Criptomoedas</h2>
-    <div class="book">
-      <img src="https://m.media-amazon.com/images/I/515z7+uX5CL._SY346_.jpg" alt="Bitcoin Book">
-      <div>
-        <h3>Bitcoin: A Peer-to-Peer Electronic Cash System</h3>
-        <a href="#">Comprar</a>
-      </div>
-    </div>
-    <div class="book">
-      <img src="https://m.media-amazon.com/images/I/419qF566+PL._SY346_.jpg" alt="Ethereum Book">
-      <div>
-        <h3>The Infinite Machine</h3>
-        <a href="#">Comprar</a>
-      </div>
-    </div>
+    <canvas id="chart"></canvas> <!-- Gráfico -->
   </div>
 </div>
 
@@ -120,74 +87,94 @@ const chartCanvas = document.getElementById('chart');
 let currentCrypto = 'bitcoin';
 let chartInstance = null;
 
+// Dados para o gráfico
+let timeLabels = [];
+let priceData = [];
+
 // Atualiza informações da criptomoeda
 function updateCryptoInfo(crypto) {
-  currentCrypto = crypto;
-  
-  // Atualiza o nome da criptomoeda
-  cryptoName.textContent = crypto.charAt(0).toUpperCase() + crypto.slice(1);
+    currentCrypto = crypto;
 
-  // Fetch do preço
-  fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${crypto}&vs_currencies=usd`)
-    .then(response => response.json())
-    .then(data => {
-      price.textContent = `$${data[crypto].usd}`;
-    })
-    .catch(() => {
-      price.textContent = 'Erro ao carregar preço';
+    // Atualiza o nome da criptomoeda
+    cryptoName.textContent = crypto.charAt(0).toUpperCase() + crypto.slice(1);
+
+    // Limpa os dados do gráfico ao trocar de moeda
+    timeLabels = [];
+    priceData = [];
+
+    // Atualiza o preço e o gráfico
+    fetchCryptoData();
+}
+
+// Busca dados da API e atualiza o preço e gráfico
+function fetchCryptoData() {
+    fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${currentCrypto}&vs_currencies=usd`)
+        .then(response => response.json())
+        .then(data => {
+            const currentPrice = data[currentCrypto].usd;
+
+            // Atualiza o preço na interface
+            price.textContent = `$${currentPrice}`;
+
+            // Adiciona os dados ao gráfico
+            const now = new Date();
+            timeLabels.push(now.toLocaleTimeString());
+            priceData.push(currentPrice);
+
+            // Mantém no máximo os últimos 10 pontos no gráfico
+            if (timeLabels.length > 10) {
+                timeLabels.shift();
+                priceData.shift();
+            }
+
+            renderChart();
+        })
+        .catch(() => {
+            console.error('Erro ao buscar dados da API.');
+        });
+}
+
+// Renderiza o gráfico com os dados mais recentes
+function renderChart() {
+    if (chartInstance) {
+        chartInstance.destroy(); // Destroi o gráfico anterior
+    }
+
+    chartInstance = new Chart(chartCanvas, {
+        type: 'line',
+        data: {
+            labels: timeLabels,
+            datasets: [{
+                label: `${currentCrypto.charAt(0).toUpperCase() + currentCrypto.slice(1)} Price (USD)`,
+                data: priceData,
+                borderColor: getCryptoColor(currentCrypto),
+                borderWidth: 2,
+                tension: 0.4,
+                fill: false,
+            }]
+        },
+        options: {
+            scales: {
+                x: { title: { display: true, text: 'Tempo' } },
+                y: { title: { display: true, text: 'Preço (USD)' }, beginAtZero: false }
+            },
+            plugins: { legend: { display: true } }
+        }
     });
-
-   // Fetch do gráfico
-   fetch(`https://api.coingecko.com/api/v3/coins/${crypto}/market_chart?vs_currency=usd&days=30`)
-     .then(response => response.json())
-     .then(data => {
-       const prices = data.prices.map(price => ({
-         x: new Date(price[0]),
-         y: price[1]
-       }));
-
-       renderChart(prices, getCryptoColor(crypto));
-     })
-     .catch(() => {
-       console.error('Erro ao carregar dados do gráfico.');
-     });
 }
 
-// Renderiza o gráfico
-function renderChart(data, color) {
-   if (chartInstance) {
-     chartInstance.destroy(); // Destroi o gráfico anterior
-   }
-
-   chartInstance = new Chart(chartCanvas, {
-     type: 'line',
-     data: {
-       datasets: [{
-         data,
-         borderColor: color,
-         borderWidth: 2,
-         tension: 0.4,
-         fill: false
-       }]
-     },
-     options: {
-       scales: {
-         x: { type: 'time', time: { unit: 'day' } },
-         y: { beginAtZero: false }
-       },
-       plugins: { legend: { display: false } }
-     }
-   });
-}
-
-// Retorna a cor da criptomoeda
+// Retorna a cor da criptomoeda para o gráfico
 function getCryptoColor(crypto) {
-   switch (crypto) {
-     case 'bitcoin': return 'gold';
-     case 'ethereum': return '#8a8a8a';
-     case 'solana': return 'purple';
-   }
+    switch (crypto) {
+        case 'bitcoin': return 'gold';
+        case 'ethereum': return '#8a8a8a';
+        case 'solana': return 'purple';
+        default: return 'blue';
+    }
 }
+
+// Atualiza os dados a cada intervalo de tempo (10 segundos)
+setInterval(fetchCryptoData, 10000);
 
 // Eventos dos botões
 bitcoinButton.addEventListener('click', () => updateCryptoInfo('bitcoin'));
