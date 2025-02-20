@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Criptomoedas</title>
+<style>
+body {
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+#container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f0f0f0;
+}
+
+#crypto-selector {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.crypto-button {
+  padding: 10px 20px;
+  border: none;
+  cursor: pointer;
+}
+
+#bitcoin-button {
+  background-color: gold;
+}
+
+#ethereum-button {
+  background-color: silver;
+}
+
+#solana-button {
+  background-color: purple;
+}
+
+#crypto-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#price {
+  font-size: 2em;
+  margin-bottom: 10px;
+}
+
+#chart {
+  width: 800px;
+  height: 400px;
+}
+
+#books {
+  margin-top: 20px;
+}
+
+.book {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.book img {
+  width: 100px;
+  height: 150px;
+  margin-right: 10px;
+}
+</style>
+</head>
+<body>
+<div id="container">
+  <h1>Criptomoedas</h1>
+
+  <div id="crypto-selector">
+    <button class="crypto-button" id="bitcoin-button">Bitcoin</button>
+    <button class="crypto-button" id="ethereum-button">Ethereum</button>
+    <button class="crypto-button" id="solana-button">Solana</button>
+  </div>
+
+  <div id="crypto-info">
+    <h2 id="crypto-name">Bitcoin</h2>
+    <p id="price">Carregando...</p>
+    <div id="chart"></div>
+  </div>
+
+  <div id="books">
+    <h2>Livros sobre Criptomoedas</h2>
+    <div class="book">
+      <img src="https://m.media-amazon.com/images/I/515z7+uX5CL._SY346_.jpg" alt="Bitcoin: A Peer-to-Peer Electronic Cash System">
+      <div>
+        <h3>Bitcoin: A Peer-to-Peer Electronic Cash System</h3>
+        <a href="#">Comprar</a>
+      </div>
+    </div>
+    <div class="book">
+      <img src="https://m.media-amazon.com/images/I/419qF566+PL._SY346_.jpg" alt="The Infinite Machine">
+      <div>
+        <h3>The Infinite Machine</h3>
+        <a href="#">Comprar</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const bitcoinButton = document.getElementById('bitcoin-button');
+const ethereumButton = document.getElementById('ethereum-button');
+const solanaButton = document.getElementById('solana-button');
+const cryptoName = document.getElementById('crypto-name');
+const price = document.getElementById('price');
+const chart = document.getElementById('chart');
+
+let currentCrypto = 'bitcoin';
+
+function updateCryptoInfo(crypto) {
+  currentCrypto = crypto;
+  cryptoName.textContent = crypto.charAt(0).toUpperCase() + crypto.slice(1);
+
+  fetch(`https://api.coingecko.com/api/v3/simple/price/${crypto}?vs_currency=usd`)
+    .then(response => response.json())
+    .then(data => {
+      price.textContent = `$${data[crypto].usd}`;
+    });
+
+  fetch(`https://api.coingecko.com/api/v3/coins/${crypto}/market_chart?vs_currency=usd&days=30`)
+    .then(response => response.json())
+    .then(data => {
+      const prices = data.prices.map(price => ({
+        x: new Date(price[0]),
+        y: price[1]
+      }));
+
+      new Chart(chart, {
+        type: 'line',
+        data: {
+          datasets: [{
+            data: prices,
+            borderColor: getCryptoColor(crypto),
+            borderWidth: 2,
+            tension: 0.4,
+            fill: false
+          }]
+        },
+        options: {
+          scales: {
+            x: {
+              type: 'time'
+            },
+            y: {
+              beginAtZero: false
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
+            }
+          }
+        }
+      });
+    });
+}
+
+function getCryptoColor(crypto) {
+  switch (crypto) {
+    case 'bitcoin':
+      return 'gold';
+    case 'ethereum':
+      return 'silver';
+    case 'solana':
+      return 'purple';
+  }
+}
+
+bitcoinButton.addEventListener('click', () => updateCryptoInfo('bitcoin'));
+ethereumButton.addEventListener('click', () => updateCryptoInfo('ethereum'));
+solanaButton.addEventListener('click', () => updateCryptoInfo('solana'));
+
+updateCryptoInfo(currentCrypto);
+</script>
+</body>
+</html>
