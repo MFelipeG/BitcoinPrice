@@ -7,6 +7,7 @@ body {
   font-family: sans-serif;
   margin: 0;
   padding: 0;
+  background-color: #f0f0f0;
 }
 
 #container {
@@ -14,7 +15,6 @@ body {
   flex-direction: column;
   align-items: center;
   min-height: 100vh;
-  background-color: #f0f0f0;
 }
 
 #crypto-selector {
@@ -26,49 +26,45 @@ body {
   padding: 10px 20px;
   border: none;
   cursor: pointer;
+  font-weight: bold;
 }
 
 #bitcoin-button {
   background-color: gold;
+  color: #fff;
 }
 
 #ethereum-button {
   background-color: silver;
+  color: #fff;
 }
 
 #solana-button {
   background-color: purple;
+  color: #fff;
 }
 
 #crypto-info {
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin-bottom: 20px;
+}
+
+#crypto-name {
+  font-size: 2em;
+  margin-bottom: 10px;
+  text-transform: uppercase;
 }
 
 #price {
-  font-size: 2em;
+  font-size: 1.5em;
   margin-bottom: 10px;
 }
 
 #chart {
   width: 800px;
   height: 400px;
-}
-
-#books {
-  margin-top: 20px;
-}
-
-.book {
-  display: flex;
-  margin-bottom: 10px;
-}
-
-.book img {
-  width: 100px;
-  height: 150px;
-  margin-right: 10px;
 }
 </style>
 </head>
@@ -87,24 +83,6 @@ body {
     <p id="price">Carregando...</p>
     <div id="chart"></div>
   </div>
-
-  <div id="books">
-    <h2>Livros sobre Criptomoedas</h2>
-    <div class="book">
-      <img src="https://m.media-amazon.com/images/I/515z7+uX5CL._SY346_.jpg" alt="Bitcoin: A Peer-to-Peer Electronic Cash System">
-      <div>
-        <h3>Bitcoin: A Peer-to-Peer Electronic Cash System</h3>
-        <a href="#">Comprar</a>
-      </div>
-    </div>
-    <div class="book">
-      <img src="https://m.media-amazon.com/images/I/419qF566+PL._SY346_.jpg" alt="The Infinite Machine">
-      <div>
-        <h3>The Infinite Machine</h3>
-        <a href="#">Comprar</a>
-      </div>
-    </div>
-  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -120,12 +98,16 @@ let currentCrypto = 'bitcoin';
 
 function updateCryptoInfo(crypto) {
   currentCrypto = crypto;
-  cryptoName.textContent = crypto.charAt(0).toUpperCase() + crypto.slice(1);
+  cryptoName.textContent = crypto.toUpperCase();
 
   fetch(`https://api.coingecko.com/api/v3/simple/price/${crypto}?vs_currency=usd`)
     .then(response => response.json())
     .then(data => {
-      price.textContent = `$${data[crypto].usd}`;
+      price.textContent = `$${data[crypto].usd.toLocaleString()}`;
+    })
+    .catch(error => {
+      price.textContent = "Erro ao carregar o preço.";
+      console.error("Erro na API CoinGecko:", error);
     });
 
   fetch(`https://api.coingecko.com/api/v3/coins/${crypto}/market_chart?vs_currency=usd&days=30`)
@@ -163,6 +145,9 @@ function updateCryptoInfo(crypto) {
           }
         }
       });
+    })
+    .catch(error => {
+      console.error("Erro na API CoinGecko:", error);
     });
 }
 
